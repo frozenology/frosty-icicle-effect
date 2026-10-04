@@ -24,64 +24,106 @@ function rgba(hex, a) {
 const canvas = $('frostCanvas');
 const ctx = canvas.getContext('2d');
 let currentRng = null, noise = null;
+
+const PARAM_DEFAULTS = {
+ width: 800, height: 600, direction: 'top-to-bottom',
+ baseColor: '#a8d8ff', highlightColor: '#e8f4ff', bgColor: '#0a1628',
+ transparentBg: false, opacity: 0.85,
+ rootCount: 18, branchProb: 0.35, maxDepth: 8, angleSpread: 35,
+ segLength: 18, branchLength: 1, thickness: 2.2,
+ noiseInfluence: 0.55, noiseMode: 'perlin', curlStrength: 0.3,
+ enableIcicles: true, icicleDensity: 0.4, icicleLength: 60,
+ icicleTaper: 0.7, icicleBlur: 0,
+ enableReflections: true, specularStrength: 0.6, sparkleCount: 80,
+ sparkleIntensity: 0.7, glowStrength: 0.4,
+ frostDensity: 0.5, noiseScale: 0.02, enableEdgeFrost: true, seed: 0
+};
+let paramsData = { ...PARAM_DEFAULTS };
+
+const PARAM_UI = {
+ width: { id: 'canvasWidth', type: 'int' },
+ height: { id: 'canvasHeight', type: 'int' },
+ direction: { id: 'direction', type: 'str' },
+ baseColor: { id: 'baseColor', type: 'str', hex: 'baseColorHex' },
+ highlightColor: { id: 'highlightColor', type: 'str', hex: 'highlightColorHex' },
+ bgColor: { id: 'bgColor', type: 'str', hex: 'bgColorHex' },
+ transparentBg: { id: 'transparentBg', type: 'bool' },
+ opacity: { id: 'opacity', type: 'float', val: 'opacityVal' },
+ rootCount: { id: 'rootCount', type: 'int', val: 'rootCountVal' },
+ branchProb: { id: 'branchProb', type: 'float', val: 'branchProbVal' },
+ maxDepth: { id: 'maxDepth', type: 'int', val: 'maxDepthVal' },
+ angleSpread: { id: 'angleSpread', type: 'float', val: 'angleSpreadVal', suffix: '°' },
+ segLength: { id: 'segLength', type: 'float', val: 'segLengthVal' },
+ branchLength: { id: 'branchLength', type: 'float', val: 'branchLengthVal' },
+ thickness: { id: 'thickness', type: 'float', val: 'thicknessVal' },
+ noiseInfluence: { id: 'noiseInfluence', type: 'float', val: 'noiseInfluenceVal' },
+ noiseMode: { id: 'noiseMode', type: 'str' },
+ curlStrength: { id: 'curlStrength', type: 'float', val: 'curlStrengthVal' },
+ enableIcicles: { id: 'enableIcicles', type: 'bool' },
+ icicleDensity: { id: 'icicleDensity', type: 'float', val: 'icicleDensityVal' },
+ icicleLength: { id: 'icicleLength', type: 'float', val: 'icicleLengthVal' },
+ icicleTaper: { id: 'icicleTaper', type: 'float', val: 'icicleTaperVal' },
+ icicleBlur: { id: 'icicleBlur', type: 'float', val: 'icicleBlurVal' },
+ enableReflections: { id: 'enableReflections', type: 'bool' },
+ specularStrength: { id: 'specularStrength', type: 'float', val: 'specularStrengthVal' },
+ sparkleCount: { id: 'sparkleCount', type: 'int', val: 'sparkleCountVal' },
+ sparkleIntensity: { id: 'sparkleIntensity', type: 'float', val: 'sparkleIntensityVal' },
+ glowStrength: { id: 'glowStrength', type: 'float', val: 'glowStrengthVal' },
+ frostDensity: { id: 'frostDensity', type: 'float', val: 'frostDensityVal' },
+ noiseScale: { id: 'noiseScale', type: 'float', val: 'noiseScaleVal' },
+ enableEdgeFrost: { id: 'enableEdgeFrost', type: 'bool' },
+ seed: { id: 'seed', type: 'int' }
+};
+
+function readParamsFromUI() {
+ const p = {};
+ for (const [key, meta] of Object.entries(PARAM_UI)) {
+ const el = $(meta.id);
+ if (!el) { p[key] = PARAM_DEFAULTS[key]; continue; }
+ if (meta.type === 'bool') p[key] = !!el.checked;
+ else if (meta.type === 'int') p[key] = parseInt(el.value) || 0;
+ else if (meta.type === 'float') p[key] = parseFloat(el.value) || 0;
+ else p[key] = el.value;
+ }
+ paramsData = p;
+ return p;
+}
+
+function applyParamsData(data) {
+ if (!data) return;
+ paramsData = { ...PARAM_DEFAULTS, ...data };
+ for (const [key, meta] of Object.entries(PARAM_UI)) {
+ const el = $(meta.id);
+ if (!el) continue;
+ const v = paramsData[key];
+ if (meta.type === 'bool') el.checked = !!v;
+ else el.value = v;
+ if (meta.hex && $(meta.hex)) $(meta.hex).value = v;
+ }
+ updateValueDisplays();
+}
+
+function getParamsData() {
+ return { ...paramsData };
+}
+window.getParamsData = getParamsData;
+window.applyParamsData = applyParamsData;
+
 function getParams() {
- return {
- width: parseInt($('canvasWidth').value) || 800,
- height: parseInt($('canvasHeight').value) || 600,
- direction: $('direction').value,
- baseColor: $('baseColor').value,
- highlightColor: $('highlightColor').value,
- bgColor: $('bgColor').value,
- transparentBg: $('transparentBg').checked,
- opacity: parseFloat($('opacity').value),
- rootCount: parseInt($('rootCount').value),
- branchProb: parseFloat($('branchProb').value),
- maxDepth: parseInt($('maxDepth').value),
- angleSpread: parseFloat($('angleSpread').value) * Math.PI / 180,
- segLength: parseFloat($('segLength').value),
- branchLength: parseFloat($('branchLength') ? $('branchLength').value : 1),
- thickness: parseFloat($('thickness').value),
- noiseInfluence: parseFloat($('noiseInfluence').value),
- noiseMode: $('noiseMode') ? $('noiseMode').value : 'perlin',
- curlStrength: parseFloat($('curlStrength').value),
- enableIcicles: $('enableIcicles').checked,
- icicleDensity: parseFloat($('icicleDensity').value),
- icicleLength: parseFloat($('icicleLength').value),
- icicleTaper: parseFloat($('icicleTaper').value),
- icicleBlur: parseFloat($('icicleBlur').value),
- enableReflections: $('enableReflections').checked,
- specularStrength: parseFloat($('specularStrength').value),
- sparkleCount: parseInt($('sparkleCount').value),
- sparkleIntensity: parseFloat($('sparkleIntensity').value),
- glowStrength: parseFloat($('glowStrength').value),
- frostDensity: parseFloat($('frostDensity').value),
- noiseScale: parseFloat($('noiseScale').value),
- enableEdgeFrost: $('enableEdgeFrost').checked,
- seed: parseInt($('seed').value) || 0
- };
+ readParamsFromUI();
+ const p = { ...paramsData };
+ p.angleSpread = (paramsData.angleSpread || 0) * Math.PI / 180;
+ return p;
 }
+
 function updateValueDisplays() {
- $('opacityVal').textContent = $('opacity').value;
- $('rootCountVal').textContent = $('rootCount').value;
- $('branchProbVal').textContent = $('branchProb').value;
- $('maxDepthVal').textContent = $('maxDepth').value;
- $('angleSpreadVal').textContent = $('angleSpread').value + '°';
- $('segLengthVal').textContent = $('segLength').value;
- if ($('branchLengthVal')) $('branchLengthVal').textContent = $('branchLength').value;
- $('thicknessVal').textContent = $('thickness').value;
- $('noiseInfluenceVal').textContent = $('noiseInfluence').value;
- $('curlStrengthVal').textContent = $('curlStrength').value;
- $('icicleDensityVal').textContent = $('icicleDensity').value;
- $('icicleLengthVal').textContent = $('icicleLength').value;
- $('icicleTaperVal').textContent = $('icicleTaper').value;
- $('icicleBlurVal').textContent = $('icicleBlur').value;
- $('specularStrengthVal').textContent = $('specularStrength').value;
- $('sparkleCountVal').textContent = $('sparkleCount').value;
- $('sparkleIntensityVal').textContent = $('sparkleIntensity').value;
- $('glowStrengthVal').textContent = $('glowStrength').value;
- $('frostDensityVal').textContent = $('frostDensity').value;
- $('noiseScaleVal').textContent = $('noiseScale').value;
+ for (const [key, meta] of Object.entries(PARAM_UI)) {
+ if (!meta.val) continue;
+ const el = $(meta.id), valEl = $(meta.val);
+ if (el && valEl) valEl.textContent = el.value + (meta.suffix || '');
+ }
 }
+
 function syncColor(id, hexId) {
  const picker = $(id), hex = $(hexId);
  picker.addEventListener('input', () => { hex.value = picker.value; scheduleGenerate(); });
@@ -92,6 +134,7 @@ function syncColor(id, hexId) {
 syncColor('baseColor', 'baseColorHex');
 syncColor('highlightColor', 'highlightColorHex');
 syncColor('bgColor', 'bgColorHex');
+
 function drawBranch(ctx, x, y, angle, length, depth, params, rng) {
  if (depth <= 0 || length < 1.5) return;
  const ni = params.noiseInfluence, curlS = params.curlStrength, scale = params.noiseScale * 40;
@@ -146,6 +189,7 @@ function drawBranch(ctx, x, y, angle, length, depth, params, rng) {
  drawBranch(ctx, endX, endY, growAngle + n * 0.5 * ni + (rng.next() - 0.5) * 0.25, length * (0.68 + rng.next() * 0.28 + n2 * 0.1 * ni), depth - 1, params, rng);
  }
 }
+
 function drawIcicle(ctx, x, y, params, rng) {
  const len = params.icicleLength * (0.5 + rng.next() * 0.8);
  const baseW = params.thickness * (1.5 + rng.next() * 1.5);
@@ -194,6 +238,7 @@ function drawIcicle(ctx, x, y, params, rng) {
  }
  ctx.restore();
 }
+
 function drawSparkles(ctx, params, rng) {
  if (!params.enableReflections || params.sparkleCount <= 0) return;
  for (let i = 0; i < params.sparkleCount; i++) {
@@ -207,6 +252,7 @@ function drawSparkles(ctx, params, rng) {
  ctx.fillStyle = rgba('#ffffff', alpha * 0.8); ctx.fill();
  }
 }
+
 function getStartPoints(params, rng) {
  const points = [], w = params.width, h = params.height, count = params.rootCount;
  switch (params.direction) {
@@ -265,12 +311,14 @@ function getStartPoints(params, rng) {
  }
  return points;
 }
+
 let isGenerating = false;
 function setLoading(on) {
  const overlay = $('loadingOverlay'), btn = $('btnRegenerate');
  if (on) { overlay.classList.add('active'); btn.disabled = true; isGenerating = true; }
  else { overlay.classList.remove('active'); btn.disabled = false; isGenerating = false; }
 }
+
 function generate() {
  if (isGenerating) return;
  setLoading(true);
@@ -281,7 +329,7 @@ function generate() {
  const params = getParams();
  canvas.width = params.width; canvas.height = params.height;
  const seed = params.seed || Math.floor(Math.random() * 1e9);
- if (!params.seed) $('seed').value = seed;
+ if (!params.seed) { $('seed').value = seed; paramsData.seed = seed; }
  currentRng = new SeededRandom(seed);
  noise = createNoise(currentRng, params.noiseMode || 'perlin');
  if (params.transparentBg) ctx.clearRect(0, 0, params.width, params.height);
@@ -351,21 +399,37 @@ function generate() {
  } finally { setLoading(false); }
  }, 30);
 }
+
 let genTimeout = null;
 function scheduleGenerate() {
  updateValueDisplays();
+ readParamsFromUI();
+ if (typeof saveCurrentToLocalStorage === 'function') saveCurrentToLocalStorage();
  if (!$('autoRegen').checked) return;
  clearTimeout(genTimeout);
  genTimeout = setTimeout(generate, 100);
 }
-$('btnRegenerate').addEventListener('click', () => { $('seed').value = 0; clearTimeout(genTimeout); generate(); });
-$('btnRandomSeed').addEventListener('click', () => { $('seed').value = Math.floor(Math.random() * 1e9); clearTimeout(genTimeout); generate(); });
+
+$('btnRegenerate').addEventListener('click', () => {
+ $('seed').value = 0; paramsData.seed = 0;
+ clearTimeout(genTimeout);
+ if (typeof saveCurrentToLocalStorage === 'function') saveCurrentToLocalStorage();
+ generate();
+});
+$('btnRandomSeed').addEventListener('click', () => {
+ const s = Math.floor(Math.random() * 1e9);
+ $('seed').value = s; paramsData.seed = s;
+ clearTimeout(genTimeout);
+ if (typeof saveCurrentToLocalStorage === 'function') saveCurrentToLocalStorage();
+ generate();
+});
 $('btnSave').addEventListener('click', () => {
  const link = document.createElement('a');
  link.download = `frosty-icicle-${Date.now()}.png`;
  link.href = canvas.toDataURL('image/png');
  link.click();
 });
+
 document.querySelectorAll(
  '#direction,#baseColor,#highlightColor,#bgColor,#transparentBg,#opacity,' +
  '#rootCount,#branchProb,#maxDepth,#angleSpread,#segLength,#branchLength,#thickness,' +
@@ -376,5 +440,12 @@ document.querySelectorAll(
  el.addEventListener('input', scheduleGenerate);
  el.addEventListener('change', scheduleGenerate);
 });
+
 updateValueDisplays();
-generate();
+if (typeof restoreFromLocalStorage === 'function') {
+ if (!restoreFromLocalStorage()) { readParamsFromUI(); generate(); }
+} else {
+ readParamsFromUI();
+ generate();
+}
+if (typeof initPresetUI === 'function') initPresetUI();
