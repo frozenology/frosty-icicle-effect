@@ -14,13 +14,10 @@
   <meta property="og:title" content="Frosty Icicle Generator — Procedural Frost & Ice Crystal Effect">
   <meta property="og:description" content="Create stunning procedural frost and icicle patterns in your browser. Perlin noise, specular highlights, export PNG.">
   <meta property="og:image" content="https://frozenology.github.io/frosty-icicle-effect/preview.jpg">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
   <meta property="og:site_name" content="Frosty Icicle Generator">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="https://frozenology.github.io/frosty-icicle-effect/">
-  <meta name="twitter:title" content="Frosty Icicle Generator — Procedural Frost & Ice Crystal Effect">
-  <meta name="twitter:description" content="Create stunning procedural frost and icicle patterns in your browser. Perlin noise, specular highlights, export PNG.">
+  <meta name="twitter:title" content="Frosty Icicle Generator">
+  <meta name="twitter:description" content="Procedural frost and icicle patterns in your browser.">
   <meta name="twitter:image" content="https://frozenology.github.io/frosty-icicle-effect/preview.jpg">
   <meta name="theme-color" content="#0d1117">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>❄</text></svg>">
@@ -29,10 +26,19 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <nav class="navbar navbar-dark px-3">
-    <div class="d-flex align-items-center gap-2">
+  <nav class="navbar navbar-dark px-3 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
       <i class="bi bi-snow2 text-info fs-5"></i>
-      <span class="navbar-brand mb-0 h1 fs-6">Frosty Icicle Generator</span>
+      <span class="navbar-brand mb-0 h1 fs-6 me-1">Frosty Icicle</span>
+      <select id="presetSelect" class="form-select form-select-sm" style="width:auto;min-width:110px;max-width:150px" title="Load preset"></select>
+      <input type="text" id="presetName" class="form-control form-control-sm" placeholder="Name" style="width:100px" list="presetNameList" title="Preset name">
+      <datalist id="presetNameList"></datalist>
+      <button type="button" id="btnPresetSave" class="btn btn-sm btn-outline-frost" title="Save preset"><i class="bi bi-save"></i></button>
+      <button type="button" id="btnPresetLoad" class="btn btn-sm btn-outline-frost" title="Load preset"><i class="bi bi-folder2-open"></i></button>
+      <button type="button" id="btnPresetDelete" class="btn btn-sm btn-outline-frost" title="Delete preset"><i class="bi bi-trash"></i></button>
+      <button type="button" id="btnPresetCopy" class="btn btn-sm btn-outline-frost" title="Copy JSON"><i class="bi bi-clipboard"></i></button>
+      <button type="button" id="btnPresetDownload" class="btn btn-sm btn-outline-frost" title="Download JSON"><i class="bi bi-filetype-json"></i></button>
+      <button type="button" id="btnPresetImport" class="btn btn-sm btn-outline-frost" title="Import JSON"><i class="bi bi-upload"></i></button>
     </div>
     <div class="d-flex align-items-center gap-2 ms-auto">
       <div class="d-flex align-items-center gap-1">
@@ -43,16 +49,12 @@
         <label class="form-label mb-0 small text-secondary">H</label>
         <input type="number" id="canvasHeight" class="form-control form-control-sm" value="600" min="200" max="2000" step="10">
       </div>
-      <button id="btnRegenerate" class="btn btn-sm btn-frost">
-        <i class="bi bi-arrow-clockwise"></i> Regenerate
-      </button>
+      <button id="btnRegenerate" class="btn btn-sm btn-frost"><i class="bi bi-arrow-clockwise"></i> Regenerate</button>
       <div class="form-check form-switch mb-0 ms-1">
         <input class="form-check-input" type="checkbox" id="autoRegen" checked>
         <label class="form-check-label" for="autoRegen">Auto-regen</label>
       </div>
-      <button id="btnSave" class="btn btn-sm btn-outline-frost">
-        <i class="bi bi-download"></i> Save
-      </button>
+      <button id="btnSave" class="btn btn-sm btn-outline-frost"><i class="bi bi-download"></i> Save</button>
     </div>
   </nav>
   <div class="main-wrapper">
@@ -81,162 +83,57 @@
       </div>
       <div class="param-section">
         <h6><i class="bi bi-palette me-1"></i> Colors</h6>
-        <div class="mb-2">
-          <label class="form-label">Base Color</label>
-          <div class="color-row">
-            <input type="color" id="baseColor" value="#a8d8ff">
-            <input type="text" id="baseColorHex" class="form-control form-control-sm" value="#a8d8ff" maxlength="7">
-          </div>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Highlight Color</label>
-          <div class="color-row">
-            <input type="color" id="highlightColor" value="#e8f4ff">
-            <input type="text" id="highlightColorHex" class="form-control form-control-sm" value="#e8f4ff" maxlength="7">
-          </div>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Background</label>
-          <div class="color-row">
-            <input type="color" id="bgColor" value="#0a1628">
-            <input type="text" id="bgColorHex" class="form-control form-control-sm" value="#0a1628" maxlength="7">
-          </div>
-        </div>
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" id="transparentBg">
-          <label class="form-check-label small" for="transparentBg">Transparent Background</label>
-        </div>
-        <div>
-          <label class="form-label d-flex justify-content-between">
-            Opacity <span class="value-display" id="opacityVal">0.85</span>
-          </label>
-          <input type="range" class="form-range" id="opacity" min="0.1" max="1" step="0.05" value="0.85">
-        </div>
+        <div class="mb-2"><label class="form-label">Base Color</label><div class="color-row"><input type="color" id="baseColor" value="#a8d8ff"><input type="text" id="baseColorHex" class="form-control form-control-sm" value="#a8d8ff" maxlength="7"></div></div>
+        <div class="mb-2"><label class="form-label">Highlight Color</label><div class="color-row"><input type="color" id="highlightColor" value="#e8f4ff"><input type="text" id="highlightColorHex" class="form-control form-control-sm" value="#e8f4ff" maxlength="7"></div></div>
+        <div class="mb-2"><label class="form-label">Background</label><div class="color-row"><input type="color" id="bgColor" value="#0a1628"><input type="text" id="bgColorHex" class="form-control form-control-sm" value="#0a1628" maxlength="7"></div></div>
+        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="transparentBg"><label class="form-check-label small" for="transparentBg">Transparent Background</label></div>
+        <div><label class="form-label d-flex justify-content-between">Opacity <span class="value-display" id="opacityVal">0.85</span></label><input type="range" class="form-range" id="opacity" min="0.1" max="1" step="0.05" value="0.85"></div>
       </div>
       <div class="param-section">
         <h6><i class="bi bi-diagram-3 me-1"></i> Structure</h6>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Root Count <span class="value-display" id="rootCountVal">18</span></label>
-          <input type="range" class="form-range" id="rootCount" min="1" max="120" step="1" value="18">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Branch Probability <span class="value-display" id="branchProbVal">0.35</span></label>
-          <input type="range" class="form-range" id="branchProb" min="0.01" max="0.95" step="0.01" value="0.35">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Max Depth <span class="value-display" id="maxDepthVal">8</span></label>
-          <input type="range" class="form-range" id="maxDepth" min="1" max="22" step="1" value="8">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Branch Angle Spread <span class="value-display" id="angleSpreadVal">35°</span></label>
-          <input type="range" class="form-range" id="angleSpread" min="5" max="120" step="1" value="35">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Segment Length <span class="value-display" id="segLengthVal">18</span></label>
-          <input type="range" class="form-range" id="segLength" min="3" max="80" step="1" value="18">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Branch Length <span class="value-display" id="branchLengthVal">1.0</span></label>
-          <input type="range" class="form-range" id="branchLength" min="0.3" max="3" step="0.05" value="1">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Thickness <span class="value-display" id="thicknessVal">2.2</span></label>
-          <input type="range" class="form-range" id="thickness" min="0.2" max="12" step="0.1" value="2.2">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Noise Influence <span class="value-display" id="noiseInfluenceVal">0.55</span></label>
-          <input type="range" class="form-range" id="noiseInfluence" min="0" max="1" step="0.05" value="0.55">
-        </div>
-        <div>
-          <label class="form-label d-flex justify-content-between">Curl / Warp <span class="value-display" id="curlStrengthVal">0.3</span></label>
-          <input type="range" class="form-range" id="curlStrength" min="0" max="1.5" step="0.05" value="0.3">
-        </div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Root Count <span class="value-display" id="rootCountVal">18</span></label><input type="range" class="form-range" id="rootCount" min="1" max="120" step="1" value="18"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Branch Probability <span class="value-display" id="branchProbVal">0.35</span></label><input type="range" class="form-range" id="branchProb" min="0.01" max="0.95" step="0.01" value="0.35"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Max Depth <span class="value-display" id="maxDepthVal">8</span></label><input type="range" class="form-range" id="maxDepth" min="1" max="22" step="1" value="8"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Branch Angle Spread <span class="value-display" id="angleSpreadVal">35°</span></label><input type="range" class="form-range" id="angleSpread" min="5" max="120" step="1" value="35"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Segment Length <span class="value-display" id="segLengthVal">18</span></label><input type="range" class="form-range" id="segLength" min="3" max="80" step="1" value="18"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Branch Length <span class="value-display" id="branchLengthVal">1.0</span></label><input type="range" class="form-range" id="branchLength" min="0.3" max="3" step="0.05" value="1"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Thickness <span class="value-display" id="thicknessVal">2.2</span></label><input type="range" class="form-range" id="thickness" min="0.2" max="12" step="0.1" value="2.2"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Noise Influence <span class="value-display" id="noiseInfluenceVal">0.55</span></label><input type="range" class="form-range" id="noiseInfluence" min="0" max="1" step="0.05" value="0.55"></div>
+        <div><label class="form-label d-flex justify-content-between">Curl / Warp <span class="value-display" id="curlStrengthVal">0.3</span></label><input type="range" class="form-range" id="curlStrength" min="0" max="1.5" step="0.05" value="0.3"></div>
       </div>
       <div class="param-section">
         <h6><i class="bi bi-droplet-half me-1"></i> Icicles</h6>
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" id="enableIcicles" checked>
-          <label class="form-check-label small" for="enableIcicles">Enable Icicles</label>
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Icicle Density <span class="value-display" id="icicleDensityVal">0.4</span></label>
-          <input type="range" class="form-range" id="icicleDensity" min="0" max="1" step="0.02" value="0.4">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Icicle Length <span class="value-display" id="icicleLengthVal">60</span></label>
-          <input type="range" class="form-range" id="icicleLength" min="10" max="250" step="5" value="60">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Icicle Taper <span class="value-display" id="icicleTaperVal">0.7</span></label>
-          <input type="range" class="form-range" id="icicleTaper" min="0.05" max="1" step="0.05" value="0.7">
-        </div>
-        <div>
-          <label class="form-label d-flex justify-content-between">Icicle Blur <span class="value-display" id="icicleBlurVal">0</span></label>
-          <input type="range" class="form-range" id="icicleBlur" min="0" max="12" step="0.5" value="0">
-        </div>
+        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="enableIcicles" checked><label class="form-check-label small" for="enableIcicles">Enable Icicles</label></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Icicle Density <span class="value-display" id="icicleDensityVal">0.4</span></label><input type="range" class="form-range" id="icicleDensity" min="0" max="1" step="0.02" value="0.4"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Icicle Length <span class="value-display" id="icicleLengthVal">60</span></label><input type="range" class="form-range" id="icicleLength" min="10" max="250" step="5" value="60"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Icicle Taper <span class="value-display" id="icicleTaperVal">0.7</span></label><input type="range" class="form-range" id="icicleTaper" min="0.05" max="1" step="0.05" value="0.7"></div>
+        <div><label class="form-label d-flex justify-content-between">Icicle Blur <span class="value-display" id="icicleBlurVal">0</span></label><input type="range" class="form-range" id="icicleBlur" min="0" max="12" step="0.5" value="0"></div>
       </div>
       <div class="param-section">
         <h6><i class="bi bi-brightness-high me-1"></i> Light & Reflections</h6>
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" id="enableReflections" checked>
-          <label class="form-check-label small" for="enableReflections">Enable Reflections</label>
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Specular Strength <span class="value-display" id="specularStrengthVal">0.6</span></label>
-          <input type="range" class="form-range" id="specularStrength" min="0" max="1.5" step="0.05" value="0.6">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Sparkle Count <span class="value-display" id="sparkleCountVal">80</span></label>
-          <input type="range" class="form-range" id="sparkleCount" min="0" max="500" step="10" value="80">
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Sparkle Intensity <span class="value-display" id="sparkleIntensityVal">0.7</span></label>
-          <input type="range" class="form-range" id="sparkleIntensity" min="0.1" max="1" step="0.05" value="0.7">
-        </div>
-        <div>
-          <label class="form-label d-flex justify-content-between">Glow Strength <span class="value-display" id="glowStrengthVal">0.4</span></label>
-          <input type="range" class="form-range" id="glowStrength" min="0" max="1" step="0.05" value="0.4">
-        </div>
+        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" id="enableReflections" checked><label class="form-check-label small" for="enableReflections">Enable Reflections</label></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Specular Strength <span class="value-display" id="specularStrengthVal">0.6</span></label><input type="range" class="form-range" id="specularStrength" min="0" max="1.5" step="0.05" value="0.6"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Sparkle Count <span class="value-display" id="sparkleCountVal">80</span></label><input type="range" class="form-range" id="sparkleCount" min="0" max="500" step="10" value="80"></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Sparkle Intensity <span class="value-display" id="sparkleIntensityVal">0.7</span></label><input type="range" class="form-range" id="sparkleIntensity" min="0.1" max="1" step="0.05" value="0.7"></div>
+        <div><label class="form-label d-flex justify-content-between">Glow Strength <span class="value-display" id="glowStrengthVal">0.4</span></label><input type="range" class="form-range" id="glowStrength" min="0" max="1" step="0.05" value="0.4"></div>
       </div>
       <div class="param-section">
         <h6><i class="bi bi-snow me-1"></i> Extra Frost</h6>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Frost Density <span class="value-display" id="frostDensityVal">0.5</span></label>
-          <input type="range" class="form-range" id="frostDensity" min="0" max="1" step="0.05" value="0.5">
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Noise Mode</label>
-          <select id="noiseMode" class="form-select form-select-sm">
-            <option value="perlin" selected>Perlin fBm</option>
-            <option value="simplex">Simplex</option>
-            <option value="value">Value</option>
-            <option value="ridged">Ridged</option>
-            <option value="turbulence">Turbulence</option>
-          </select>
-        </div>
-        <div class="mb-2">
-          <label class="form-label d-flex justify-content-between">Noise Scale <span class="value-display" id="noiseScaleVal">0.02</span></label>
-          <input type="range" class="form-range" id="noiseScale" min="0.002" max="0.15" step="0.001" value="0.02">
-        </div>
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="enableEdgeFrost" checked>
-          <label class="form-check-label small" for="enableEdgeFrost">Edge Frost Buildup</label>
-        </div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Frost Density <span class="value-display" id="frostDensityVal">0.5</span></label><input type="range" class="form-range" id="frostDensity" min="0" max="1" step="0.05" value="0.5"></div>
+        <div class="mb-2"><label class="form-label">Noise Mode</label><select id="noiseMode" class="form-select form-select-sm"><option value="perlin" selected>Perlin fBm</option><option value="simplex">Simplex</option><option value="value">Value</option><option value="ridged">Ridged</option><option value="turbulence">Turbulence</option></select></div>
+        <div class="mb-2"><label class="form-label d-flex justify-content-between">Noise Scale <span class="value-display" id="noiseScaleVal">0.02</span></label><input type="range" class="form-range" id="noiseScale" min="0.002" max="0.15" step="0.001" value="0.02"></div>
+        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="enableEdgeFrost" checked><label class="form-check-label small" for="enableEdgeFrost">Edge Frost Buildup</label></div>
       </div>
       <div class="param-section">
         <h6><i class="bi bi-dice-5 me-1"></i> Randomness</h6>
-        <div class="mb-2">
-          <label class="form-label">Seed (0 = random)</label>
-          <input type="number" id="seed" class="form-control form-control-sm" value="0" min="0">
-        </div>
-        <button id="btnRandomSeed" class="btn btn-sm btn-outline-frost w-100">
-          <i class="bi bi-shuffle"></i> New Random Seed
-        </button>
+        <div class="mb-2"><label class="form-label">Seed (0 = random)</label><input type="number" id="seed" class="form-control form-control-sm" value="0" min="0"></div>
+        <button id="btnRandomSeed" class="btn btn-sm btn-outline-frost w-100"><i class="bi bi-shuffle"></i> New Random Seed</button>
       </div>
     </aside>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="noise.js"></script>
+  <script src="preset.js"></script>
   <script src="generator.js"></script>
 </body>
 </html>
