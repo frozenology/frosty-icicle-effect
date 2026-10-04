@@ -3,30 +3,286 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Frosty Icicle Effect</title>
-  <style>
-    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: #0d1117; color: #e6edf3; font-family: system-ui, sans-serif; padding: 2rem; }
-    .card { max-width: 520px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 1.75rem; }
-    h1 { font-size: 1.25rem; margin: 0 0 0.75rem; color: #58a6ff; }
-    a { color: #58a6ff; }
-    ol { margin: 0.75rem 0; padding-left: 1.25rem; line-height: 1.6; color: #8b949e; }
-    code { background: #0d1117; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
-  </style>
+  <title>Frosty Icicle Generator — Procedural Frost & Ice Crystal Effect</title>
+  <meta name="description" content="Free online procedural frosty icicle and ice crystal generator. Create realistic frost patterns with Perlin noise, specular reflections, customizable branches, icicles, and export as PNG.">
+  <meta name="keywords" content="frost effect, icicle generator, ice crystal, procedural frost, canvas frost, snowflake generator, winter VFX, Perlin noise frost">
+  <meta name="author" content="Frozenology">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://frozenology.github.io/frosty-icicle-effect/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://frozenology.github.io/frosty-icicle-effect/">
+  <meta property="og:title" content="Frosty Icicle Generator — Procedural Frost & Ice Crystal Effect">
+  <meta property="og:description" content="Create stunning procedural frost and icicle patterns in your browser. Perlin noise, specular highlights, export PNG.">
+  <meta property="og:image" content="https://frozenology.github.io/frosty-icicle-effect/preview.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Frosty Icicle Generator">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://frozenology.github.io/frosty-icicle-effect/">
+  <meta name="twitter:title" content="Frosty Icicle Generator — Procedural Frost & Ice Crystal Effect">
+  <meta name="twitter:description" content="Create stunning procedural frost and icicle patterns in your browser. Perlin noise, specular highlights, export PNG.">
+  <meta name="twitter:image" content="https://frozenology.github.io/frosty-icicle-effect/preview.jpg">
+
+  <meta name="theme-color" content="#0d1117">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>❄</text></svg>">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="card">
-    <h1>❄ Frosty Icicle Effect</h1>
-    <p>Repo is ready. To finish the live demo:</p>
-    <ol>
-      <li>Open this repo on GitHub → <strong>Add file → Upload files</strong></li>
-      <li>Upload your local <code>frosty-icicle-effect.html</code> and rename it to <code>index.html</code> (replace this file)</li>
-      <li>Go to <strong>Settings → Pages</strong></li>
-      <li>Source: <strong>Deploy from a branch</strong> → Branch <code>main</code> / <code>/</code> (root) → Save</li>
-    </ol>
-    <p>Site URL will be:<br>
-      <a href="https://frozenology.github.io/frosty-icicle-effect/">https://frozenology.github.io/frosty-icicle-effect/</a>
-    </p>
+<!-- Top Navbar -->
+  <nav class="navbar navbar-dark px-3">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-snow2 text-info fs-5"></i>
+      <span class="navbar-brand mb-0 h1 fs-6">Frosty Icicle Generator</span>
+    </div>
+    <div class="d-flex align-items-center gap-2 ms-auto">
+      <div class="d-flex align-items-center gap-1">
+        <label class="form-label mb-0 small text-secondary">W</label>
+        <input type="number" id="canvasWidth" class="form-control form-control-sm" value="800" min="200" max="2000" step="10">
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <label class="form-label mb-0 small text-secondary">H</label>
+        <input type="number" id="canvasHeight" class="form-control form-control-sm" value="600" min="200" max="2000" step="10">
+      </div>
+      <button id="btnRegenerate" class="btn btn-sm btn-frost">
+        <i class="bi bi-arrow-clockwise"></i> Regenerate
+      </button>
+      <div class="form-check form-switch mb-0 ms-1">
+        <input class="form-check-input" type="checkbox" id="autoRegen" checked>
+        <label class="form-check-label" for="autoRegen">Auto-regen</label>
+      </div>
+      <button id="btnSave" class="btn btn-sm btn-outline-frost">
+        <i class="bi bi-download"></i> Save
+      </button>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <!-- Canvas Area -->
+    <div class="canvas-area">
+      <canvas id="frostCanvas" width="800" height="600"></canvas>
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Generating frost…</div>
+      </div>
+      <div class="status-bar" id="statusBar">Ready</div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <aside class="sidebar">
+      <!-- Direction -->
+      <div class="param-section">
+        <h6><i class="bi bi-arrows-move me-1"></i> Direction</h6>
+        <select id="direction" class="form-select form-select-sm">
+          <option value="border-to-center">Border → Center</option>
+          <option value="center-to-border">Center → Border</option>
+          <option value="top-to-bottom" selected>Top → Bottom</option>
+          <option value="bottom-to-top">Bottom → Top</option>
+          <option value="left-to-right">Left → Right</option>
+          <option value="right-to-left">Right → Left</option>
+          <option value="radial-out">Radial Outward</option>
+          <option value="radial-in">Radial Inward</option>
+          <option value="random">Random Growth</option>
+        </select>
+      </div>
+
+      <!-- Colors -->
+      <div class="param-section">
+        <h6><i class="bi bi-palette me-1"></i> Colors</h6>
+        <div class="mb-2">
+          <label class="form-label">Base Color</label>
+          <div class="color-row">
+            <input type="color" id="baseColor" value="#a8d8ff">
+            <input type="text" id="baseColorHex" class="form-control form-control-sm" value="#a8d8ff" maxlength="7">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Highlight Color</label>
+          <div class="color-row">
+            <input type="color" id="highlightColor" value="#e8f4ff">
+            <input type="text" id="highlightColorHex" class="form-control form-control-sm" value="#e8f4ff" maxlength="7">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Background</label>
+          <div class="color-row">
+            <input type="color" id="bgColor" value="#0a1628">
+            <input type="text" id="bgColorHex" class="form-control form-control-sm" value="#0a1628" maxlength="7">
+          </div>
+        </div>
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="transparentBg">
+          <label class="form-check-label small" for="transparentBg">Transparent Background</label>
+        </div>
+        <div>
+          <label class="form-label d-flex justify-content-between">
+            Opacity <span class="value-display" id="opacityVal">0.85</span>
+          </label>
+          <input type="range" class="form-range" id="opacity" min="0.1" max="1" step="0.05" value="0.85">
+        </div>
+      </div>
+
+      <!-- Structure: Roots & Branches -->
+      <div class="param-section">
+        <h6><i class="bi bi-diagram-3 me-1"></i> Structure</h6>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Root Count <span class="value-display" id="rootCountVal">18</span>
+          </label>
+          <input type="range" class="form-range" id="rootCount" min="1" max="120" step="1" value="18">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Branch Probability <span class="value-display" id="branchProbVal">0.35</span>
+          </label>
+          <input type="range" class="form-range" id="branchProb" min="0.01" max="0.95" step="0.01" value="0.35">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Max Depth <span class="value-display" id="maxDepthVal">8</span>
+          </label>
+          <input type="range" class="form-range" id="maxDepth" min="1" max="22" step="1" value="8">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Branch Angle Spread <span class="value-display" id="angleSpreadVal">35°</span>
+          </label>
+          <input type="range" class="form-range" id="angleSpread" min="5" max="120" step="1" value="35">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Segment Length <span class="value-display" id="segLengthVal">18</span>
+          </label>
+          <input type="range" class="form-range" id="segLength" min="3" max="80" step="1" value="18">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Thickness <span class="value-display" id="thicknessVal">2.2</span>
+          </label>
+          <input type="range" class="form-range" id="thickness" min="0.2" max="12" step="0.1" value="2.2">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Noise Influence <span class="value-display" id="noiseInfluenceVal">0.55</span>
+          </label>
+          <input type="range" class="form-range" id="noiseInfluence" min="0" max="1" step="0.05" value="0.55">
+        </div>
+        <div>
+          <label class="form-label d-flex justify-content-between">
+            Curl / Warp <span class="value-display" id="curlStrengthVal">0.3</span>
+          </label>
+          <input type="range" class="form-range" id="curlStrength" min="0" max="1.5" step="0.05" value="0.3">
+        </div>
+      </div>
+
+      <!-- Icicles -->
+      <div class="param-section">
+        <h6><i class="bi bi-droplet-half me-1"></i> Icicles</h6>
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="enableIcicles" checked>
+          <label class="form-check-label small" for="enableIcicles">Enable Icicles</label>
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Icicle Density <span class="value-display" id="icicleDensityVal">0.4</span>
+          </label>
+          <input type="range" class="form-range" id="icicleDensity" min="0" max="1" step="0.02" value="0.4">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Icicle Length <span class="value-display" id="icicleLengthVal">60</span>
+          </label>
+          <input type="range" class="form-range" id="icicleLength" min="10" max="250" step="5" value="60">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Icicle Taper <span class="value-display" id="icicleTaperVal">0.7</span>
+          </label>
+          <input type="range" class="form-range" id="icicleTaper" min="0.05" max="1" step="0.05" value="0.7">
+        </div>
+        <div>
+          <label class="form-label d-flex justify-content-between">
+            Icicle Blur <span class="value-display" id="icicleBlurVal">0</span>
+          </label>
+          <input type="range" class="form-range" id="icicleBlur" min="0" max="12" step="0.5" value="0">
+        </div>
+      </div>
+
+      <!-- Light & Reflections -->
+      <div class="param-section">
+        <h6><i class="bi bi-brightness-high me-1"></i> Light & Reflections</h6>
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="enableReflections" checked>
+          <label class="form-check-label small" for="enableReflections">Enable Reflections</label>
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Specular Strength <span class="value-display" id="specularStrengthVal">0.6</span>
+          </label>
+          <input type="range" class="form-range" id="specularStrength" min="0" max="1.5" step="0.05" value="0.6">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Sparkle Count <span class="value-display" id="sparkleCountVal">80</span>
+          </label>
+          <input type="range" class="form-range" id="sparkleCount" min="0" max="500" step="10" value="80">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Sparkle Intensity <span class="value-display" id="sparkleIntensityVal">0.7</span>
+          </label>
+          <input type="range" class="form-range" id="sparkleIntensity" min="0.1" max="1" step="0.05" value="0.7">
+        </div>
+        <div>
+          <label class="form-label d-flex justify-content-between">
+            Glow Strength <span class="value-display" id="glowStrengthVal">0.4</span>
+          </label>
+          <input type="range" class="form-range" id="glowStrength" min="0" max="1" step="0.05" value="0.4">
+        </div>
+      </div>
+
+      <!-- Extra Frost -->
+      <div class="param-section">
+        <h6><i class="bi bi-snow me-1"></i> Extra Frost</h6>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Frost Density <span class="value-display" id="frostDensityVal">0.5</span>
+          </label>
+          <input type="range" class="form-range" id="frostDensity" min="0" max="1" step="0.05" value="0.5">
+        </div>
+        <div class="mb-2">
+          <label class="form-label d-flex justify-content-between">
+            Noise Scale <span class="value-display" id="noiseScaleVal">0.02</span>
+          </label>
+          <input type="range" class="form-range" id="noiseScale" min="0.002" max="0.15" step="0.001" value="0.02">
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="enableEdgeFrost" checked>
+          <label class="form-check-label small" for="enableEdgeFrost">Edge Frost Buildup</label>
+        </div>
+      </div>
+
+      <!-- Seed -->
+      <div class="param-section">
+        <h6><i class="bi bi-dice-5 me-1"></i> Randomness</h6>
+        <div class="mb-2">
+          <label class="form-label">Seed (0 = random)</label>
+          <input type="number" id="seed" class="form-control form-control-sm" value="0" min="0">
+        </div>
+        <button id="btnRandomSeed" class="btn btn-sm btn-outline-frost w-100">
+          <i class="bi bi-shuffle"></i> New Random Seed
+        </button>
+      </div>
+    </aside>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="generator.js"></script>
 </body>
 </html>
