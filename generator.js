@@ -14,57 +14,6 @@ class SeededRandom {
  return Math.floor(this.range(min, max + 1));
  }
 }
-function createNoise(rng) {
- const grads = [];
- for (let i = 0; i < 256; i++) {
- const a = rng.next() * Math.PI * 2;
- grads.push([Math.cos(a), Math.sin(a)]);
- }
- const perm = new Uint8Array(512);
- for (let i = 0; i < 256; i++) perm[i] = i;
- for (let i = 255; i > 0; i--) {
- const j = rng.int(0, i);
- [perm[i], perm[j]] = [perm[j], perm[i]];
- }
- for (let i = 0; i < 256; i++) perm[i + 256] = perm[i];
- function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
- function lerp(a, b, t) { return a + t * (b - a); }
- function perlin2(x, y) {
- const X = Math.floor(x) & 255;
- const Y = Math.floor(y) & 255;
- const xf = x - Math.floor(x);
- const yf = y - Math.floor(y);
- const u = fade(xf);
- const v = fade(yf);
- const aa = perm[perm[X] + Y];
- const ab = perm[perm[X] + Y + 1];
- const ba = perm[perm[X + 1] + Y];
- const bb = perm[perm[X + 1] + Y + 1];
- const gaa = grads[aa];
- const gab = grads[ab];
- const gba = grads[ba];
- const gbb = grads[bb];
- const dotAA = gaa[0] * xf + gaa[1] * yf;
- const dotBA = gba[0] * (xf - 1) + gba[1] * yf;
- const dotAB = gab[0] * xf + gab[1] * (yf - 1);
- const dotBB = gbb[0] * (xf - 1) + gbb[1] * (yf - 1);
- return lerp(lerp(dotAA, dotBA, u), lerp(dotAB, dotBB, u), v);
- }
- function fbm(x, y, octaves = 4, lacunarity = 2.0, gain = 0.5) {
- let sum = 0, amp = 1, freq = 1, maxAmp = 0;
- for (let i = 0; i < octaves; i++) {
- sum += perlin2(x * freq, y * freq) * amp;
- maxAmp += amp; amp *= gain; freq *= lacunarity;
- }
- return sum / maxAmp;
- }
- function curl(x, y, eps = 0.01) {
- const n1 = fbm(x, y + eps), n2 = fbm(x, y - eps);
- const n3 = fbm(x + eps, y), n4 = fbm(x - eps, y);
- return { x: (n1 - n2) / (2 * eps), y: (n4 - n3) / (2 * eps) };
- }
- return { perlin: perlin2, fbm, curl };
-}
 function hexToRgb(hex) {
  return { r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) };
 }
@@ -90,8 +39,10 @@ function getParams() {
  maxDepth: parseInt($('maxDepth').value),
  angleSpread: parseFloat($('angleSpread').value) * Math.PI / 180,
  segLength: parseFloat($('segLength').value),
+ branchLength: parseFloat($('branchLength') ? $('branchLength').value : 1),
  thickness: parseFloat($('thickness').value),
  noiseInfluence: parseFloat($('noiseInfluence').value),
+ noiseMode: $('noiseMode') ? $('noiseMode').value : 'perlin',
  curlStrength: parseFloat($('curlStrength').value),
  enableIcicles: $('enableIcicles').checked,
  icicleDensity: parseFloat($('icicleDensity').value),
@@ -116,6 +67,7 @@ function updateValueDisplays() {
  $('maxDepthVal').textContent = $('maxDepth').value;
  $('angleSpreadVal').textContent = $('angleSpread').value + '°';
  $('segLengthVal').textContent = $('segLength').value;
+ if ($('branchLengthVal')) $('branchLengthVal').textContent = $('branchLength').value;
  $('thicknessVal').textContent = $('thickness').value;
  $('noiseInfluenceVal').textContent = $('noiseInfluence').value;
  $('curlStrengthVal').textContent = $('curlStrength').value;
@@ -331,7 +283,7 @@ function generate() {
  const seed = params.seed || Math.floor(Math.random() * 1e9);
  if (!params.seed) $('seed').value = seed;
  currentRng = new SeededRandom(seed);
- noise = createNoise(currentRng);
+ noise = createNoise(currentRng, params.noiseMode || 'perlin');
  if (params.transparentBg) ctx.clearRect(0, 0, params.width, params.height);
  else { ctx.fillStyle = params.bgColor; ctx.fillRect(0, 0, params.width, params.height); }
  if (params.enableEdgeFrost && params.frostDensity > 0) {
@@ -358,7 +310,7 @@ function generate() {
  ctx.restore();
  }
  for (const p of getStartPoints(params, currentRng)) {
- drawBranch(ctx, p.x, p.y, p.angle, params.segLength * (0.8 + currentRng.next() * 0.5), params.maxDepth, params, currentRng);
+ drawBranch(ctx, p.x, p.y, p.angle, params.segLength * (params.branchLength || 1) * (0.8 + currentRng.next() * 0.5), params.maxDepth, params, currentRng);
  }
  if (params.enableIcicles) {
  const icicleCount = Math.floor(params.rootCount * 3 * params.icicleDensity);
@@ -416,10 +368,10 @@ $('btnSave').addEventListener('click', () => {
 });
 document.querySelectorAll(
  '#direction,#baseColor,#highlightColor,#bgColor,#transparentBg,#opacity,' +
- '#rootCount,#branchProb,#maxDepth,#angleSpread,#segLength,#thickness,' +
+ '#rootCount,#branchProb,#maxDepth,#angleSpread,#segLength,#branchLength,#thickness,' +
  '#noiseInfluence,#curlStrength,#enableIcicles,#icicleDensity,#icicleLength,#icicleTaper,#icicleBlur,' +
  '#enableReflections,#specularStrength,#sparkleCount,#sparkleIntensity,#glowStrength,' +
- '#frostDensity,#noiseScale,#enableEdgeFrost,#seed,#canvasWidth,#canvasHeight'
+ '#frostDensity,#noiseScale,#noiseMode,#enableEdgeFrost,#seed,#canvasWidth,#canvasHeight'
 ).forEach(el => {
  el.addEventListener('input', scheduleGenerate);
  el.addEventListener('change', scheduleGenerate);
